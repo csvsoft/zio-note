@@ -1,6 +1,6 @@
 package zio.notes.create
 
-import scalaz.zio.{IO, Ref}
+import zio.{IO, Ref}
 
 class RefSpec extends BasicSpec {
 
@@ -31,6 +31,18 @@ class RefSpec extends BasicSpec {
     val repeatOps = repeat(10)(ops)
     eval(repeatOps)
 
+  }
+
+  it("modify"){
+   val newValue =  Ref.make[Int](0).flatMap( (idCounter:zio.Ref[Int]) =>{
+      def increase = idCounter.modify[String](id=>(s"counter: ${id+1}",id + 1))
+      for{
+        _ <- increase
+        _ <- increase
+        v3 <- increase
+      }yield v3
+    })
+    eval(newValue)
   }
 
 }

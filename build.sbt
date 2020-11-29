@@ -1,19 +1,12 @@
 val Specs2Version     = "4.1.0"
 val LogbackVersion    = "1.2.3"
 val ScalaLogVersion   = "3.9.2"
-val ZioVersion        = "1.0-RC5"
+val ZioVersion        = "1.0.3"
 val ScalaTestVersion  = "3.0.5"
 
 lazy val root = (project in file("."))
-  .enablePlugins(JavaAppPackaging, DockerSpotifyClientPlugin)
+  //.enablePlugins(JavaAppPackaging, DockerSpotifyClientPlugin)
   .settings(
-    packageName in Docker := "zio-todo",
-    dockerUsername in Docker := Some("grumpyraven"),
-    dockerExposedPorts in Docker := Seq(8080),
-    organization := "com.schuwalow",
-    name := "zio-todo-backend",
-    maintainer := "maxim.schuwalow@gmail.com",
-    licenses := Seq("MIT" -> url(s"https://github.com/mschuwalow/${name.value}/blob/v${version.value}/LICENSE")),
     scalaVersion := "2.12.8",
     scalacOptions := Seq(
       "-feature",
@@ -30,7 +23,7 @@ lazy val root = (project in file("."))
       "-Ywarn-value-discard",
       "-Ywarn-numeric-widen",
       "-Ywarn-extra-implicit",
-      "-Ywarn-unused:_",
+      //"-Ywarn-unused:_",
       "-Ywarn-inaccessible",
       "-Ywarn-nullary-override",
       "-Ywarn-nullary-unit",
@@ -42,9 +35,18 @@ lazy val root = (project in file("."))
 
       "com.typesafe.scala-logging"  %% "scala-logging"            % ScalaLogVersion,
 
-      "org.scalaz"                  %% "scalaz-zio"               % ZioVersion,
-      "org.scalaz"                  %% "scalaz-zio-streams"       % ZioVersion,
-      "org.scalaz"                  %% "scalaz-zio-interop-cats"  % ZioVersion,
+     // "org.scalaz"                  %% "scalaz-zio"               % ZioVersion,
+     // "org.scalaz"                  %% "scalaz-zio-streams"       % ZioVersion,
+     // "org.scalaz"                  %% "scalaz-zio-interop-cats"  % ZioVersion,
+
+
+      // https://mvnrepository.com/artifact/dev.zio/zio
+       "dev.zio" %% "zio" % ZioVersion,
+       "dev.zio" %% "zio-streams" % ZioVersion,
+       "dev.zio" %% "zio-test" % ZioVersion % Test,
+
+
+
 
       "org.scalatest"               %% "scalatest"                % ScalaTestVersion % "test",
 
@@ -53,45 +55,13 @@ lazy val root = (project in file("."))
     )
   )
 
-libraryDependencies += "dev.zio" %% "zio-streams" % "1.0.0-RC12-1"
+//libraryDependencies += "dev.zio" %% "zio-streams" % "1.0.0-RC12-1"
+// https://mvnrepository.com/artifact/dev.zio/zio-nio
+libraryDependencies += "dev.zio" %% "zio-nio" % "1.0.0-RC10"
 
-
-//release
-import ReleaseTransformations._
-import ReleasePlugin.autoImport._
-import sbtrelease.{Git, Utilities}
-import Utilities._
-
-releaseProcess := Seq(
-  checkSnapshotDependencies,
-  inquireVersions,
-  runClean,
-  runTest,
-  setReleaseVersion,
-  commitReleaseVersion,
-  pushChanges,
-  tagRelease,
-  mergeReleaseVersion,
-  ReleaseStep(releaseStepTask(publish in Docker)),
-  setNextVersion,
-  commitNextVersion,
-  pushChanges
+libraryDependencies ++= Seq(
+  "dev.zio" %% "zio-test"          % ZioVersion % "test",
+  "dev.zio" %% "zio-test-sbt"      % ZioVersion % "test",
+  "dev.zio" %% "zio-test-magnolia" % ZioVersion % "test" // optional
 )
-
-val mergeBranch = "master"
-
-val mergeReleaseVersion = ReleaseStep(action = st => {
-  val git = st.extract.get(releaseVcs).get.asInstanceOf[Git]
-  val curBranch = (git.cmd("rev-parse", "--abbrev-ref", "HEAD") !!).trim
-  st.log.info(s"####### current branch: $curBranch")
-  git.cmd("checkout", mergeBranch) ! st.log
-  st.log.info(s"####### pull $mergeBranch")
-  git.cmd("pull") ! st.log
-  st.log.info(s"####### merge")
-  git.cmd("merge", curBranch, "--no-ff", "--no-edit") ! st.log
-  st.log.info(s"####### push")
-  git.cmd("push", "origin", s"$mergeBranch:$mergeBranch") ! st.log
-  st.log.info(s"####### checkout $curBranch")
-  git.cmd("checkout", curBranch) ! st.log
-  st
-})
+testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")

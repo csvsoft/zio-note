@@ -2,9 +2,9 @@ package zio.notes.create
 
 import java.util.concurrent.TimeUnit
 
-import scalaz.zio.{DefaultRuntime, Semaphore, ZIO}
-import scalaz.zio.console._
-import scalaz.zio.duration.Duration
+import zio.{ Semaphore, ZIO}
+import zio.console._
+import zio.duration.Duration
 
 class SemophoreSpec extends BasicSpec {
 
@@ -17,9 +17,8 @@ class SemophoreSpec extends BasicSpec {
     } yield ()
 
     val semTask = (sem: Semaphore) => for {
-      _ <- sem.acquireN(1)
-      _ <- task
-      _ <- sem.releaseN(1) // shortcut is sem.release
+      _ <- sem.withPermit(task)
+
     } yield ()
 
     /*
@@ -35,7 +34,7 @@ class SemophoreSpec extends BasicSpec {
       seq <- ZIO.effectTotal(semTaskSeq(sem))
       res <- ZIO.collectAllPar(seq)
     } yield res
-    new DefaultRuntime {}.unsafeRun(semOps)
+    eval(semOps)
   }
 
 }

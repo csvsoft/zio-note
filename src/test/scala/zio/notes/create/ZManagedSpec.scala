@@ -1,14 +1,14 @@
 package zio.notes.create
 
-import scalaz.zio.{DefaultRuntime, Promise, ZIO, ZManaged, console}
-import scalaz.zio.console._
+import zio.{ Promise, ZIO, ZManaged, console}
+import zio.console._
 
 class ZManagedSpec extends BasicSpec {
 
   it("ZManaged"){
     val zM :ZManaged[Console, Nothing, Unit]  = ZManaged.make(console.putStrLn("acquiring"))(_ => console.putStrLn("releasing"))
      val used = zM.use(_=>console.putStrLn("using"))
-    new DefaultRuntime {}.unsafeRun(used)
+    eval(used)
   }
 
   it("Promise is a variable that can only be set once"){
@@ -25,20 +25,20 @@ class ZManagedSpec extends BasicSpec {
   }
 
   it("Simple example of promise"){
-    import scalaz.zio.duration._
-    import scalaz.zio.clock._
+    import zio.duration._
+    import zio.clock._
     import scala.language.postfixOps
 
     val example = for{
       promise <-  Promise.make[Exception, String]
       taskSend    = (ZIO.succeed("Hello world") <* sleep(1 second)).flatMap(promise.succeed) // set promise
-      taskReceive = promise.await.flatMap(console.putStrLn) // wait for the promise to be set and print the result
+      taskReceive = promise.await.flatMap(s=>console.putStrLn(s)) // wait for the promise to be set and print the result
       fiberSend   <- taskSend.fork
       fiberReceive <- taskReceive.fork
       r <- (fiberSend zip fiberReceive).join
 
     } yield r
-    new DefaultRuntime {}.unsafeRun(example) shouldBe ((true,()))
+    eval(example) shouldBe ((true,()))
   }
 
 }
